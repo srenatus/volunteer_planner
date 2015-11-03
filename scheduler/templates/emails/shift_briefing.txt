@@ -1,0 +1,31 @@
+{% load i18n%}{% blocktrans %}Hallo {{ username }},
+
+Du hast Dich für folgende Schicht angemeldet:
+
+{{ organization }}
+{{ facility }}
+{{ facility_address }}
+
+{{ task }} - {{ workplace }}
+am {{ shift_date }}, {{ shift_starting_time }} - {{ shift_ending_time }} Uhr
+
+Du findest die Infos zu der Schicht unter {{ shift_url }}. Wenn Du die Aufgabe doch nicht übernehmen kannst oder willst, dann trage Dich dort bitte rechtzeitig wieder aus der Schicht aus, damit jemand anderes Deine Aufgabe übernehmen kann.
+
+Hier sind noch ein paar Details zu Deiner Schicht:
+
+Zur Aufgabe {{ task }}:
+{{ task_briefing }}
+
+Zum Treffpunkt/Einsatzort:
+{{ workplace_briefing }}
+
+Zu {{ facility }}:
+{{ general_facility_briefing }}
+
+Wenn Du noch Fragen zur Schicht hast, dann wende Dich bitte an {{ shift_contact_name }} ({{ shift_contact_email }}).
+
+Vielen Dank für Deine Hilfe,
+
+Dein volunteer-planner.org-Team
+für {{organization}}{% endblocktrans %}
+queryset

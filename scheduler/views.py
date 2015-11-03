@@ -5,12 +5,21 @@ import logging
 import json
 import itertools
 
+from django.core.mail import EmailMessage
+from django.template.defaultfilters import date as date_filter, striptags
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+
 from django.db.models import Count
+
+from django.template.loader import render_to_string
+from django.utils import lorem_ipsum
+
 from django.utils.safestring import mark_safe
+
 from django.views.generic import TemplateView, FormView, DetailView
+
 from django.shortcuts import get_object_or_404
 
 from django.utils.translation import ugettext_lazy as _
@@ -110,6 +119,53 @@ class GeographicHelpdeskView(DetailView):
         return context
 
 
+def send_briefing_mail(shift_helper):
+    # template = loader.load()
+
+    shift = shift_helper.shift
+    user = shift_helper.user_account.user
+    if user.email:
+        subject = _(
+            u'Deine Schicht am {}'.format(
+                date_filter(shift.starting_time.date)))
+
+        username = user.first_name or user.username
+        context = {
+            'username': username.strip(),
+            'facility': shift.facility.name.strip(),
+            'facility_address': shift.facility.address_line.strip(),
+            'organization': shift.facility.organization.name.strip(),
+            'task': shift.task.name.strip(),
+            'workplace': shift.workplace.name.strip(),
+            'shift_date': date_filter(shift.starting_time),
+            'shift_starting_time': date_filter(shift.starting_time, 'H:i'),
+            'shift_ending_time': date_filter(shift.ending_time, 'H:i'),
+            'shift_url': 'http://example.de/link/to/shift#shift_id',
+            'general_facility_briefing': shift.facility.email_briefing.strip() or striptags(
+                shift.facility.description) or lorem_ipsum.paragraph(),
+            'task_briefing': shift.task.email_briefing.strip() or striptags(
+                shift.task.description),
+            'workplace_briefing': shift.workplace.email_briefing.strip() or striptags(
+                shift.workplace.description),
+            'shift_contact_name': 'shift_contact_name',
+            'shift_contact_email': 'shift_contact_email@example.com',
+        }
+        message = render_to_string('emails/shift_briefing.txt', context=context)
+
+        from_email = "shift_contact_name <shift_contact_email@example.com>"
+
+        # addresses = [shift_helper.user_account.user.email]
+        to = [
+            '{username} <{to_email}>'.format(username=username,
+                                             to_email=user.email)
+        ]
+        mail = EmailMessage(subject=subject,
+                            body=message,
+                            to=to,
+                            from_email=from_email)
+        mail.send()
+
+
 class PlannerView(LoginRequiredMixin, FormView):
     """
     View that gets shown to volunteers when they browse a specific day.
@@ -175,6 +231,7 @@ class PlannerView(LoginRequiredMixin, FormView):
                 if created:
                     messages.success(self.request, _(
                         u'You were successfully added to this shift.'))
+                    send_briefing_mail(shift_helper)
                 else:
                     messages.warning(self.request, _(
                         u'You already signed up for this shift at {date_time}.').format(
