@@ -59,6 +59,13 @@ class Facility(models.Model):
     # anything one needs to know on how to contact the facility
     contact_info = models.TextField(verbose_name=_(u'contact info'))
 
+    # anything one needs to know about the facility when signing up for a shift
+    email_briefing = models.TextField(blank=True,
+                                      default=u'',
+                                      verbose_name=_(u'email briefing'),
+                                      help_text=_(
+                                          u'Additional information, which is sent to users enrolling for a shift.'))
+
     # users associated with this facility
     # ie. members, admins, admins
     members = models.ManyToManyField(UserAccount,
@@ -184,6 +191,13 @@ class Workplace(models.Model):
     # a description of the workplace
     description = models.TextField(blank=True, verbose_name=_(u'description'))
 
+    # anything one needs to know about the workplace when signing up for a shift
+    email_briefing = models.TextField(blank=True,
+                                      default=u'',
+                                      verbose_name=_(u'email briefing'),
+                                      help_text=_(
+                                          u'Additional information, which is sent to users enrolling for a shift.'))
+
     class Meta:
         verbose_name = _(u'workplace')
         verbose_name_plural = _(u'workplaces')
@@ -204,6 +218,13 @@ class Task(models.Model):
 
     # a description of the task
     description = models.TextField(blank=True, verbose_name=_(u'description'))
+
+    # anything one needs to know about the task when signing up for a shift
+    email_briefing = models.TextField(blank=True,
+                                      default=u'',
+                                      verbose_name=_(u'email briefing'),
+                                      help_text=_(
+                                          u'Additional information, which is sent to users enrolling for a shift.'))
 
     class Meta:
         verbose_name = _(u'task')
