@@ -7,6 +7,7 @@ import logging
 from datetime import date
 
 from django.contrib import messages
+from django.contrib.sites.models import Site
 from django.core.mail import EmailMessage
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.urlresolvers import reverse
@@ -137,6 +138,12 @@ def send_briefing_mail(shift_helper):
             for obj in (shift.facility, shift.task, shift.workplace)
             ]
 
+        shift_url = 'https://{domain}{shift_url}'.format(
+            domain=Site.objects.get_current().domain,
+            shift_url=shift.get_absolute_url(),
+            shift_id=shift.id
+        )
+
         context = {
             'username': username.strip(),
             'facility': shift.facility.name.strip(),
@@ -147,7 +154,7 @@ def send_briefing_mail(shift_helper):
             'shift_date': date_filter(shift.starting_time),
             'shift_starting_time': date_filter(shift.starting_time, 'H:i'),
             'shift_ending_time': date_filter(shift.ending_time, 'H:i'),
-            'shift_url': 'http://example.de/link/to/shift#shift_id',
+            'shift_url': shift_url,
             'general_facility_briefing': facility_briefing,
             'task_briefing': task_briefing,
             'workplace_briefing': workplace_briefing,
