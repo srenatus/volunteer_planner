@@ -1,6 +1,7 @@
 # coding: utf-8
 from datetime import time
 
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils.formats import localize
 from django.utils.translation import ugettext_lazy as _, ungettext_lazy
@@ -48,6 +49,10 @@ class Shift(models.Model):
         return (self.ending_time.date() - self.starting_time.date()).days
 
     @property
+    def starting_date(self):
+        return self.starting_time.date()
+
+    @property
     def duration(self):
         return self.ending_time - self.starting_time
 
@@ -67,6 +72,15 @@ class Shift(models.Model):
             facility=self.facility.name,
             start=localize(self.starting_time),
             end=localize(self.ending_time))
+
+    def get_absolute_url(self):
+        return reverse('planner_by_facility', kwargs={
+            'pk': self.facility_id,
+            'year': self.starting_date.year,
+            'month': self.starting_date.month,
+            'day': self.starting_date.day,
+            'shift_id': self.id
+        })
 
 
 class ShiftHelper(models.Model):
