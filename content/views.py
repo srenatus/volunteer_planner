@@ -57,7 +57,5 @@ def render_translated_flatpage(request, f):
         f.title = translation.title
         f.content = translation.content
     except FlatPageTranslation.DoesNotExist:
-        print(u'no translation for page "{flatpage}" for language {lang}'.format(
-            flatpage=f.url,
-            lang=request.LANGUAGE_CODE))
+        pass
     return render_flatpage(request, f)
