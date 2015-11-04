@@ -1,36 +1,30 @@
 # coding: utf-8
 
-from datetime import date
-import logging
-import json
+import HTMLParser
 import itertools
+import json
+import logging
+from datetime import date
 
+from django.contrib import messages
 from django.core.mail import EmailMessage
-from django.template.defaultfilters import date as date_filter, striptags
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.urlresolvers import reverse
-from django.contrib import messages
-
 from django.db.models import Count
-
-from django.template.loader import render_to_string
-from django.utils import lorem_ipsum
-
-from django.utils.safestring import mark_safe
-
-from django.views.generic import TemplateView, FormView, DetailView
-
 from django.shortcuts import get_object_or_404
-
+from django.template.defaultfilters import date as date_filter, striptags
+from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+from django.views.generic import TemplateView, FormView, DetailView
 
 from accounts.models import UserAccount
 from organizations.models import Facility
 from organizations.views import get_facility_details
 from scheduler.models import Shift
 from scheduler.models import ShiftHelper
-from .forms import RegisterForShiftForm
 from volunteer_planner.utils import LoginRequiredMixin
+from .forms import RegisterForShiftForm
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +124,19 @@ def send_briefing_mail(shift_helper):
                 date_filter(shift.starting_time.date)))
 
         username = user.first_name or user.username
+        no_details_placeholder = _(u'No details provided.')
+
+        html_parser = HTMLParser.HTMLParser()
+        facility_briefing, \
+        task_briefing, \
+        workplace_briefing = [
+            (mark_safe(striptags(obj.email_briefing
+                                 or obj.description).strip())
+             or no_details_placeholder)
+            if obj else no_details_placeholder
+            for obj in (shift.facility, shift.task, shift.workplace)
+            ]
+
         context = {
             'username': username.strip(),
             'facility': shift.facility.name.strip(),
@@ -141,16 +148,14 @@ def send_briefing_mail(shift_helper):
             'shift_starting_time': date_filter(shift.starting_time, 'H:i'),
             'shift_ending_time': date_filter(shift.ending_time, 'H:i'),
             'shift_url': 'http://example.de/link/to/shift#shift_id',
-            'general_facility_briefing': shift.facility.email_briefing.strip() or striptags(
-                shift.facility.description) or lorem_ipsum.paragraph(),
-            'task_briefing': shift.task.email_briefing.strip() or striptags(
-                shift.task.description),
-            'workplace_briefing': shift.workplace.email_briefing.strip() or striptags(
-                shift.workplace.description),
+            'general_facility_briefing': facility_briefing,
+            'task_briefing': task_briefing,
+            'workplace_briefing': workplace_briefing,
             'shift_contact_name': 'shift_contact_name',
             'shift_contact_email': 'shift_contact_email@example.com',
         }
-        message = render_to_string('emails/shift_briefing.txt', context=context)
+        message = html_parser.unescape(
+            render_to_string('emails/shift_briefing.txt', context=context))
 
         from_email = "shift_contact_name <shift_contact_email@example.com>"
 
