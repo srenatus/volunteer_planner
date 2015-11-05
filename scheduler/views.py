@@ -145,7 +145,7 @@ def send_briefing_mail(shift_helper):
     user = shift_helper.user_account.user
     if user.email:
         subject = _(
-            u'Deine Schicht am {}'.format(
+            u'Your shift on {}'.format(
                 date_filter(shift.starting_time.date)))
 
         username = user.first_name or user.username
@@ -189,7 +189,7 @@ def send_briefing_mail(shift_helper):
             'task_briefing': task_briefing,
             'workplace_briefing': workplace_briefing,
             'shift_contact': shift_contact or _(
-                u'Dein Team vom volunteer-planner.org')
+                u'Your volunteer-planner.org team')
         }
         message = html_parser.unescape(
             render_to_string('emails/shift_briefing.txt', context=context))
