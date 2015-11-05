@@ -12,6 +12,7 @@ from django.core.mail import EmailMessage
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.urlresolvers import reverse
 from django.db.models import Count
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import date as date_filter, striptags
 from django.template.loader import render_to_string
@@ -28,6 +29,31 @@ from volunteer_planner.utils import LoginRequiredMixin
 from .forms import RegisterForShiftForm
 
 logger = logging.getLogger(__name__)
+
+import re
+
+a_nodes = re.compile(r'(<a\s.*href\s*=\s*.*>.*<\s*/\s*a\s*>)', re.IGNORECASE)
+href_value = re.compile(r'.*href\s*=\s*[\'"](?:[a-z]+\:\s*)?([^\'" >]+)',
+                        re.IGNORECASE)
+
+
+def replace_links(string, raise_errors=False):
+    """
+    Returns new string with all occurences of HTML a href tags replaced with the
+    value of the href attribute.
+    """
+    links = a_nodes.findall(string)
+
+    result = u'{}'.format(string)
+    for link in links:
+        try:
+            hrefs = href_value.findall(link)
+            if hrefs:
+                result = result.replace(link, hrefs[0])
+        except:
+            if raise_errors:
+                raise
+    return result
 
 
 def get_open_shifts():
@@ -115,8 +141,6 @@ class GeographicHelpdeskView(DetailView):
 
 
 def send_briefing_mail(shift_helper):
-    # template = loader.load()
-
     shift = shift_helper.shift
     user = shift_helper.user_account.user
     if user.email:
@@ -125,24 +149,30 @@ def send_briefing_mail(shift_helper):
                 date_filter(shift.starting_time.date)))
 
         username = user.first_name or user.username
-        no_details_placeholder = _(u'No details provided.')
+        no_details_placeholder = u'--- {} ---'.format(
+            _(u'No further details available'))
 
         html_parser = HTMLParser.HTMLParser()
         facility_briefing, \
         task_briefing, \
         workplace_briefing = [
             (mark_safe(striptags(obj.email_briefing
-                                 or obj.description).strip())
+                                 or replace_links(obj.description)).strip())
              or no_details_placeholder)
             if obj else no_details_placeholder
             for obj in (shift.facility, shift.task, shift.workplace)
             ]
 
-        shift_url = 'https://{domain}{shift_url}'.format(
+        shift_url = 'https://{domain}{shift_url}#{shift_id}'.format(
             domain=Site.objects.get_current().domain,
             shift_url=shift.get_absolute_url(),
             shift_id=shift.id
         )
+
+        shift_contact = shift.get_shift_contact()
+        reply_to = []
+        if shift_contact:
+            reply_to.append(shift_contact.email)
 
         context = {
             'username': username.strip(),
@@ -158,23 +188,26 @@ def send_briefing_mail(shift_helper):
             'general_facility_briefing': facility_briefing,
             'task_briefing': task_briefing,
             'workplace_briefing': workplace_briefing,
-            'shift_contact_name': 'shift_contact_name',
-            'shift_contact_email': 'shift_contact_email@example.com',
+            'shift_contact': shift_contact or _(
+                u'Dein Team vom volunteer-planner.org')
         }
         message = html_parser.unescape(
             render_to_string('emails/shift_briefing.txt', context=context))
 
-        from_email = "shift_contact_name <shift_contact_email@example.com>"
+        from_email = "Volunteer-Planner <support@volunteer-planner.org>"
 
         # addresses = [shift_helper.user_account.user.email]
         to = [
-            '{username} <{to_email}>'.format(username=username,
-                                             to_email=user.email)
+            '{username} <{to_email}>'.format(
+                username=user.get_full_name() or username,
+                to_email=user.email
+            )
         ]
         mail = EmailMessage(subject=subject,
                             body=message,
                             to=to,
-                            from_email=from_email)
+                            from_email=from_email,
+                            reply_to=reply_to)
         mail.send()
 
 
@@ -188,12 +221,16 @@ class PlannerView(LoginRequiredMixin, FormView):
     form_class = RegisterForShiftForm
 
     def get_context_data(self, **kwargs):
-
         context = super(PlannerView, self).get_context_data(**kwargs)
-        schedule_date = date(int(self.kwargs['year']),
-                             int(self.kwargs['month']),
-                             int(self.kwargs['day']))
+
         facility = get_object_or_404(Facility, pk=self.kwargs['pk'])
+
+        try:
+            schedule_date = date(int(self.kwargs['year']),
+                                 int(self.kwargs['month']),
+                                 int(self.kwargs['day']))
+        except:
+            raise Http404(_(u"Invalid date {}".format(self.kwargs)))
 
         shifts = Shift.objects.filter(facility=facility)
         shifts = shifts.on_shiftdate(schedule_date)

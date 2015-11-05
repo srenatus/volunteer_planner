@@ -1,26 +1,24 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta, datetime, time
 
-from django.utils import formats
 from django import forms
 from django.conf.urls import url
 from django.contrib import admin, messages
-from django.core.urlresolvers import reverse
 from django.db.models import Min, Count, Sum
 from django.forms import DateInput, TimeInput
-from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.templatetags.l10n import localize
+from django.utils import formats
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _, ungettext_lazy
 
-from . import models
 from organizations.admin import (MembershipFilteredAdmin,
                                  MembershipFilteredTabularInline,
                                  MembershipFieldListFilter,
                                  filter_queryset_by_membership)
 from scheduler import models as scheduler_models
+from . import models
 
 
 class ShiftTemplateForm(forms.ModelForm):
@@ -97,12 +95,15 @@ class ScheduleTemplateAdmin(MembershipFilteredAdmin):
     list_display = (
         'name',
         'facility',
+        'shift_contact',
         'get_slot_count',
         'get_shift_template_count',
         'get_earliest_starting_time',
-        'get_latest_ending_time')
+        'get_latest_ending_time'
+    )
     list_filter = (
         ('facility', MembershipFieldListFilter),
+        ('shift_contact', MembershipFieldListFilter),
     )
     search_fields = ('name',)
     list_select_related = True
@@ -215,7 +216,8 @@ class ScheduleTemplateAdmin(MembershipFilteredAdmin):
                     context)
 
             # Phase 3: Create shifts
-            elif request.POST.get('confirm') or request.POST.get('confirm_and_repeat'):
+            elif request.POST.get('confirm') or request.POST.get(
+                    'confirm_and_repeat'):
                 for template in selected_shift_templates:
                     starting_time = datetime.combine(apply_date,
                                                      template.starting_time)
@@ -225,7 +227,9 @@ class ScheduleTemplateAdmin(MembershipFilteredAdmin):
                         ending_time=starting_time + template.duration,
                         task=template.task,
                         workplace=template.workplace,
-                        slots=template.slots)
+                        slots=template.slots,
+                        shift_contact=template.shift_contact or template.schedule_template.shift_contact,
+                    )
 
                 messages.success(request, ungettext_lazy(
                     u'{num_shifts} shift was added to {date}',
@@ -310,6 +314,7 @@ class ShiftTemplateAdmin(MembershipFilteredAdmin):
         'slots',
         'task',
         'workplace',
+        'shift_contact',
         'starting_time',
         'ending_time',
         'days',
@@ -319,6 +324,7 @@ class ShiftTemplateAdmin(MembershipFilteredAdmin):
         ('schedule_template', MembershipFieldListFilter),
         ('task', MembershipFieldListFilter),
         ('workplace', MembershipFieldListFilter),
+        ('shift_contact', MembershipFieldListFilter),
     )
     search_fields = (
         'schedule_template__name',

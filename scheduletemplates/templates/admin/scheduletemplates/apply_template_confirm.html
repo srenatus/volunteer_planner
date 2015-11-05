@@ -19,9 +19,10 @@
     <div id="content-main">
 
     <h2>
-    {% blocktrans trimmed with localized_date=selected_date|localize facility_name=schedule_template.facility.name %}
-        Please review and confirm shifts to create on {{ localized_date }} for {{ facility_name }}
-    {% endblocktrans %}
+        {% blocktrans trimmed with localized_date=selected_date|localize facility_name=schedule_template.facility.name %}
+            Please review and confirm shifts to create on {{ localized_date }}
+            for {{ facility_name }}
+        {% endblocktrans %}
     </h2>
 
     <form method="post">
@@ -40,12 +41,7 @@
         {% trans "workplace" as workplace_trans %}
         {% trans "starting time" as starting_trans %}
         {% trans "ending time" as ending_trans %}
-
-        <h3>
-
-
-
-        </h3>
+        {% trans "contact person" as shift_contact_trans %}
 
         {% regroup combined_shifts by task as shifts_by_task %}
 
@@ -59,7 +55,7 @@
                 {% for shifts_at_workplace in shifts_by_workplace %}
                     <thead>
                     <tr>
-                        <th colspan="6">
+                        <th colspan="7">
                             <h2>
                                 {{ shifts_for_task.grouper.name }}
                                 {% if shifts_at_workplace.grouper %}
@@ -76,6 +72,7 @@
                         <th> {{ workplace_trans|title }}</th>
                         <th> {{ starting_trans|title }}</th>
                         <th> {{ ending_trans|title }}</th>
+                        <th> {{ shift_contact_trans | title }}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -109,6 +106,7 @@
                                 <td>
                                     {{ shift.localized_display_ending_time }}
                                 </td>
+                                <td>{{ shift.get_shift_contact }}</td>
                             </tr>
                         {% endwith %}
                     {% endfor %}

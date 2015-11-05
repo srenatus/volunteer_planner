@@ -51,6 +51,7 @@ class ShiftAdmin(MembershipFilteredAdmin):
         'starting_time',
         'ending_time',
         'slots',
+        'shift_contact',
         'get_volunteer_count',
         'get_volunteer_names'
     )
@@ -58,6 +59,7 @@ class ShiftAdmin(MembershipFilteredAdmin):
     search_fields = ('id', 'task__name',)
     list_filter = (
         ('facility', MembershipFieldListFilter),
+        ('shift_contact', MembershipFieldListFilter),
         'starting_time',
         'ending_time'
     )
@@ -65,6 +67,11 @@ class ShiftAdmin(MembershipFilteredAdmin):
 
 @admin.register(models.ShiftHelper)
 class ShiftHelperAdmin(MembershipFilteredAdmin):
-    list_display = (u'id', 'user_account', 'shift', 'joined_shift_at')
+    list_display = (
+        'id',
+        'user_account',
+        'shift',
+        'joined_shift_at'
+    )
     list_filter = ('joined_shift_at',)
     raw_id_fields = ('user_account', 'shift')

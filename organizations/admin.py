@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict
 import itertools
+from collections import defaultdict
 from operator import itemgetter
 
 from ckeditor.widgets import CKEditorWidget
@@ -8,7 +8,6 @@ from django.contrib import admin
 from django.db.models import Q, Count
 from django.template.defaultfilters import striptags
 from django.utils.encoding import smart_text
-
 from django.utils.translation import ugettext_lazy as _
 
 from . import models
@@ -148,8 +147,11 @@ class MembershipFilteredAdmin(admin.ModelAdmin):
         if db_field.rel.to in (models.Facility,
                                models.Organization,
                                models.Task,
-                               models.Workplace):
-            qs = qs or db_field.rel.to.objects.all()
+                               models.Workplace,
+                               models.ContactPerson,
+                               models.FacilityMembership,
+                               models.OrganizationMembership):
+            qs = (qs or db_field.rel.to.objects).all()
             qs = filter_queryset_by_membership(qs, request.user)
         return qs
 
@@ -190,7 +192,6 @@ class MembershipFieldListFilter(admin.RelatedFieldListFilter):
 
 @admin.register(models.Organization)
 class OrganizationAdmin(MembershipFilteredAdmin):
-
     def get_short_description(self, obj):
         return striptags(obj.short_description)
 
@@ -251,6 +252,7 @@ class FacilityAdmin(MembershipFilteredAdmin):
         'get_short_description',
         'get_description',
         'get_contact_info',
+        'shift_contact',
         'place',
         'address',
         'zip_code',
@@ -286,8 +288,8 @@ class OrganizationMembershipAdmin(MembershipFilteredAdmin):
 @admin.register(models.FacilityMembership)
 class FacilityMembershipAdmin(MembershipFilteredAdmin):
     list_display = (
-        'role',
         'user_account',
+        'role',
         'facility'
     )
     list_filter = (
@@ -305,12 +307,14 @@ class WorkplaceAdmin(MembershipFilteredAdmin):
     get_description.allow_tags = True
 
     list_display = (
-        'facility',
         'name',
+        'facility',
+        'shift_contact',
         'get_description'
     )
     list_filter = (
         ('facility', MembershipFieldListFilter),
+        ('shift_contact', MembershipFieldListFilter),
     )
     search_fields = ('name',)
     list_select_related = True
@@ -329,12 +333,14 @@ class TaskAdmin(MembershipFilteredAdmin):
     get_description.allow_tags = True
 
     list_display = (
-        'facility',
         'name',
+        'facility',
+        'shift_contact',
         'get_description'
     )
     list_filter = (
         ('facility', MembershipFieldListFilter),
+        ('shift_contact', MembershipFieldListFilter),
     )
     search_fields = ('name',)
     list_select_related = True
@@ -342,3 +348,33 @@ class TaskAdmin(MembershipFilteredAdmin):
     widgets = {
         'description': CKEditorWidget(),
     }
+
+
+@admin.register(models.ContactPerson)
+class ContactPersonAdmin(MembershipFilteredAdmin):
+    list_display = (
+        'facility',
+        'name',
+        'email',
+        'member'
+    )
+    list_filter = (
+        ('facility', MembershipFieldListFilter),
+    )
+    search_fields = ('name', 'email')
+    list_select_related = True
+    radio_fields = {"facility": admin.VERTICAL}
+
+    def get_field_queryset(self, db, db_field, request):
+        qs = super(ContactPersonAdmin, self).get_field_queryset(db, db_field,
+                                                           request)
+        if not request.user.is_superuser \
+                and db_field.rel.to == models.FacilityMembership:
+            user_orgs, user_facilities = get_cached_memberships(request.user)
+            if (user_orgs or user_facilities):
+                qs = (qs or db_field.rel.to.objects).filter(
+                    Q(facility_id__in=user_facilities)
+                    | Q(facility__organization_id__in=user_orgs))
+            qs = qs.filter(role__in=DEFAULT_FILTER_ROLES)
+            qs = qs.order_by('facility', )
+        return qs

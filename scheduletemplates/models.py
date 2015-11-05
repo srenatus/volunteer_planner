@@ -16,6 +16,13 @@ class ScheduleTemplate(models.Model):
                                  verbose_name=_(u'facility'),
                                  related_name='schedule_templates')
 
+    shift_contact = models.ForeignKey(
+        'organizations.ContactPerson', null=True, blank=True, related_name='+',
+        verbose_name=_(u'contact person'),
+        help_text=_(
+            u'Contact person to share with shift helpers.')
+    )
+
     class Meta:
         ordering = ('facility',)
         verbose_name_plural = _('schedule templates')
@@ -50,8 +57,22 @@ class ShiftTemplate(models.Model):
     days = models.PositiveIntegerField(verbose_name=_(u'days'),
                                        default=0)
 
-    objects = managers.ShiftTemplateManager()
+    shift_contact = models.ForeignKey(
+        'organizations.ContactPerson', null=True, blank=True, related_name='+',
+        verbose_name=_(u'contact person'),
+        help_text=_(
+            u'Contact person to share with shift helpers.')
+    )
 
+    def get_shift_contact(self):
+        return self.shift_contact \
+               or self.schedule_template.shift_contact and u'from Schedule: {}'.format(self.task.shift_contact) \
+               or self.task.shift_contact and u'from Task: {}'.format(self.task.shift_contact) \
+               or (self.workplace and self.workplace.shift_contact) and u'from Workplace: {}'.format(self.workplace.shift_contact) \
+               or self.schedule_template.facility.shift_contact and u'from Facility: {}'.format(self.schedule_template.facility.shift_contact)
+
+
+    objects = managers.ShiftTemplateManager()
 
     class Meta:
         ordering = ('schedule_template',)

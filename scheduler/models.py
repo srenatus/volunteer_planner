@@ -32,6 +32,13 @@ class Shift(models.Model):
     ending_time = models.DateTimeField(verbose_name=_('ending time'),
                                        db_index=True)
 
+    shift_contact = models.ForeignKey(
+        'organizations.ContactPerson', null=True, blank=True, related_name='+',
+        verbose_name=_(u'contact person'),
+        help_text=_(
+            u'Contact person to share with shift helpers.')
+    )
+
     helpers = models.ManyToManyField('accounts.UserAccount',
                                      through='ShiftHelper',
                                      related_name='shifts')
@@ -43,6 +50,16 @@ class Shift(models.Model):
         verbose_name = _(u'shift')
         verbose_name_plural = _(u'shifts')
         ordering = ['starting_time', 'ending_time']
+
+    def get_shift_contact(self):
+        if self.shift_contact:
+            return self.shift_contact
+        elif self.task.shift_contact:
+            return self.task.shift_contact
+        elif self.workplace and self.workplace.shift_contact:
+            return self.workplace.shift_contact
+        else:
+            return self.facility.shift_contact
 
     @property
     def days(self):
@@ -79,7 +96,6 @@ class Shift(models.Model):
             'year': self.starting_date.year,
             'month': self.starting_date.month,
             'day': self.starting_date.day,
-            'shift_id': self.id
         })
 
 

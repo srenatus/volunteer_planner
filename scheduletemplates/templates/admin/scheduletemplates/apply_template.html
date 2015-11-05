@@ -55,6 +55,8 @@
             {% trans "workplace" as workplace_trans %}
             {% trans "starting time" as starting_trans %}
             {% trans "ending time" as ending_trans %}
+            {% trans "contact person" as shift_contact_trans %}
+
             {% regroup shift_templates by task as shifts_by_task %}
 
             <h3>{% trans "Select a date" %} </h3>
@@ -78,7 +80,7 @@
                         {% for shifts_at_workplace in shifts_by_workplace %}
                             <thead>
                             <tr>
-                                <th colspan="6">
+                                <th colspan="7">
                                     <h2>
                                         {{ shifts_for_task.grouper.name }}
                                         {% if shifts_at_workplace.grouper %}
@@ -95,6 +97,7 @@
                                 <th> {{ workplace_trans|title }}</th>
                                 <th> {{ starting_trans|title }}</th>
                                 <th> {{ ending_trans|title }}</th>
+                                <th> {{ shift_contact_trans|title }}</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -111,6 +114,11 @@
                                         {{ shift.workplace.name|default:"" }}</td>
                                     <td>{{ shift.starting_time }}</td>
                                     <td>{{ shift.localized_display_ending_time }}</td>
+                                    <td>
+                                        {{ shift.get_shift_contact }}
+
+
+                                    </td>
                                 </tr>
                             {% endfor %}
                             </tbody>

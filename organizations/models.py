@@ -95,10 +95,21 @@ class Facility(models.Model):
     longitude = models.CharField(max_length=30, blank=True,
                                  verbose_name=_('longitude'))
 
+    shift_contact = models.ForeignKey(
+        'organizations.ContactPerson', null=True, blank=True,
+        related_name='+',
+        verbose_name=_(u'contact person'),
+        help_text=_(
+            u'Contact person to share with shift helpers.')
+    )
+
     class Meta:
         verbose_name = _(u'facility')
         verbose_name_plural = _(u'facilities')
         ordering = ('organization', 'place', 'name',)
+
+    def get_shift_contact(self):
+        return self.shift_contact or self.organization.shift_contact
 
     @property
     def address_line(self):
@@ -151,10 +162,10 @@ class OrganizationMembership(Membership):
         ordering = ('organization', 'role', 'user_account')
 
     def __unicode__(self):
-        return _(u"{username} at {organization_name} ({user_role})").format(
-            username=self.user_account.user.username,
+        return _(u"{organization_name}: {username} ({user_role})").format(
             organization_name=self.organization.name,
-            user_role=self.role)
+            username=self.user_account.user.username,
+            user_role=self.get_role_display())
 
 
 class FacilityMembership(Membership):
@@ -172,10 +183,10 @@ class FacilityMembership(Membership):
         ordering = ('facility', 'role', 'user_account')
 
     def __unicode__(self):
-        return _(u"{username} at {facility_name} ({user_role})").format(
-            username=self.user_account.user.username,
+        return _(u"{facility_name}: {username} ({user_role})").format(
             facility_name=self.facility.name,
-            user_role=self.role)
+            username=self.user_account.user.username,
+            user_role=self.get_role_display())
 
 
 class Workplace(models.Model):
@@ -197,6 +208,14 @@ class Workplace(models.Model):
                                       verbose_name=_(u'email briefing'),
                                       help_text=_(
                                           u'Additional information, which is sent to users enrolling for a shift.'))
+
+    shift_contact = models.ForeignKey(
+        'organizations.ContactPerson', null=True, blank=True,
+        related_name='+',
+        verbose_name=_(u'contact person'),
+        help_text=_(
+            u'Contact person to share with shift helpers.')
+    )
 
     class Meta:
         verbose_name = _(u'workplace')
@@ -226,6 +245,14 @@ class Task(models.Model):
                                       help_text=_(
                                           u'Additional information, which is sent to users enrolling for a shift.'))
 
+    shift_contact = models.ForeignKey(
+        'organizations.ContactPerson', null=True, blank=True,
+        related_name='+',
+        verbose_name=_(u'contact person'),
+        help_text=_(
+            u'Contact person to share with shift helpers.')
+    )
+
     class Meta:
         verbose_name = _(u'task')
         verbose_name_plural = _(u'tasks')
@@ -233,3 +260,25 @@ class Task(models.Model):
 
     def __unicode__(self):
         return _(u"{name}").format(name=self.name)
+
+
+class ContactPerson(models.Model):
+    facility = models.ForeignKey('Facility',
+                                 verbose_name=_(u"facility"),
+                                 related_name='+')
+
+    name = models.CharField(max_length=256, verbose_name=_('name'))
+    email = models.EmailField(verbose_name=_(u'email'))
+
+    member = models.ForeignKey(FacilityMembership,
+                               null=True, blank=True, related_name='+',
+                               verbose_name=_(u'member'))
+
+    class Meta:
+        unique_together = (('facility', 'member'), ('facility', 'email'))
+        verbose_name = _(u'contact person')
+        verbose_name_plural = _(u'contact persons')
+        ordering = ('facility', 'name', 'email')
+
+    def __unicode__(self):
+        return u'{name} ({email})'.format(name=self.name, email=self.email)
