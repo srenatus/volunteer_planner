@@ -14,6 +14,7 @@ from django.core.urlresolvers import reverse
 from django.db.models import Count
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.template import TemplateDoesNotExist
 from django.template.defaultfilters import date as date_filter, striptags
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -140,7 +141,34 @@ class GeographicHelpdeskView(DetailView):
         return context
 
 
-def send_briefing_mail(shift_helper):
+def render_email_templates(template_name, context, request=None):
+
+    try:
+        html_content = render_to_string(
+            'emails/{template_name}.html',
+            context,
+            request=request
+        )
+    except TemplateDoesNotExist:
+        html_content = None
+
+
+    try:
+        html_parser = HTMLParser.HTMLParser()
+        plain_content = render_to_string(
+            'emails/{template_name}.txt',
+            context,
+            request=request
+        )
+        plain_content = html_parser.unescape(plain_content)
+        plain_content = plain_content.strip()
+    except TemplateDoesNotExist:
+        plain_content = None
+
+    return plain_content, html_content
+
+
+def send_briefing_mail(shift_helper, request=None):
     shift = shift_helper.shift
     user = shift_helper.user_account.user
     if user.email:
@@ -149,16 +177,13 @@ def send_briefing_mail(shift_helper):
                 date_filter(shift.starting_time.date)))
 
         username = user.first_name or user.username
+
         no_details_placeholder = u'--- {} ---'.format(
             _(u'No further details available'))
 
-        html_parser = HTMLParser.HTMLParser()
-        facility_briefing, \
-        task_briefing, \
-        workplace_briefing = [
-            (mark_safe(striptags(obj.email_briefing
-                                 or replace_links(obj.description)).strip())
-             or no_details_placeholder)
+        facility_briefing, task_briefing, workplace_briefing = [
+            (mark_safe(striptags(obj.email_briefing or replace_links(
+                obj.description)).strip()) or no_details_placeholder)
             if obj else no_details_placeholder
             for obj in (shift.facility, shift.task, shift.workplace)
             ]
@@ -191,12 +216,12 @@ def send_briefing_mail(shift_helper):
             'shift_contact': shift_contact or _(
                 u'Your volunteer-planner.org team')
         }
-        message = html_parser.unescape(
-            render_to_string('emails/shift_briefing.txt', context=context))
+
+        plain_content, html_content = render_email_templates('shift_briefing',
+                                                             context,
+                                                             request)
 
         from_email = "Volunteer-Planner <support@volunteer-planner.org>"
-
-        # addresses = [shift_helper.user_account.user.email]
         to = [
             '{username} <{to_email}>'.format(
                 username=user.get_full_name() or username,
@@ -204,7 +229,7 @@ def send_briefing_mail(shift_helper):
             )
         ]
         mail = EmailMessage(subject=subject,
-                            body=message,
+                            body=plain_content,
                             to=to,
                             from_email=from_email,
                             reply_to=reply_to)
@@ -280,7 +305,7 @@ class PlannerView(LoginRequiredMixin, FormView):
                 if created:
                     messages.success(self.request, _(
                         u'You were successfully added to this shift.'))
-                    send_briefing_mail(shift_helper)
+                    send_briefing_mail(shift_helper, self.request)
                 else:
                     messages.warning(self.request, _(
                         u'You already signed up for this shift at {date_time}.').format(
