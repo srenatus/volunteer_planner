@@ -33,6 +33,10 @@ class BreadcrumpablePlaceModel(models.Model):
     def breadcrumps(self):
         return self.parent and self.parent.breadcrumps + [self, ] or [self, ]
 
+    @property
+    def ordering_name(self):
+        return u', '.join([u'{}'.format(getattr(self, i)) for i in self._meta.ordering])
+
     @classmethod
     def get_select_related_list(cls, chain=None):
         select_related = []

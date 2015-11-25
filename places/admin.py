@@ -1,6 +1,7 @@
 # coding=utf-8
 from django.contrib import admin
 
+from . import forms
 from .models import Country, Region, Area, Place
 
 
@@ -21,6 +22,7 @@ class RegionAdmin(admin.ModelAdmin):
 
 @admin.register(Area)
 class AreaAdmin(admin.ModelAdmin):
+    form = forms.AreaAdminForm
     list_display = (u'id', 'region', 'name', 'slug')
     list_filter = ('region',)
     search_fields = ('name', 'slug')
@@ -29,6 +31,7 @@ class AreaAdmin(admin.ModelAdmin):
 
 @admin.register(Place)
 class PlaceAdmin(admin.ModelAdmin):
+    form = forms.PlaceAdminForm
 
     def get_region(self, obj):
         return obj.area.region
