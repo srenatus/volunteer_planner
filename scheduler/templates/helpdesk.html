@@ -60,11 +60,13 @@
                                         {{ facility.name }} {% endverbatim %}[{% trans "see more" %}]{% verbatim %} <span class="glyphicon glyphicon-triangle-bottom pull-right"></span>
                                     </accordion-heading>
                                     <div class="col-md-12">
-                                        <div class="col-md-8">
+                                        <div class="col-md-8">{% endverbatim %}
+					    {% if facility.address_line %}
                                             <h5>
                                                 {{ facility.address_line }}
                                                 <a target="_blank" ng-href="{{ facility.google_maps_link }}">→ Google Maps</a>
                                             </h5>
+					    {% endif %}{% verbatim %}
                                             <p ng-bind-html="facility.description"></p>
                                             <a ng-href="{{ facility.url }}">{% endverbatim %}{% trans "Show details" %}{% verbatim %}</a>
 
