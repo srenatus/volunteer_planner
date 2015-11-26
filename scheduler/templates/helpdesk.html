@@ -1,5 +1,10 @@
 {% extends "base.html" %}
+{% load leaflet_tags geojson_tags %}
 
+{% block extra_assets %}
+  {% leaflet_js %}
+  {% leaflet_css %}
+{% endblock %}
 
 {% block html_attributes %} ng-app="vpWidgets"{% endblock %}
 
@@ -35,8 +40,18 @@
 {% load google_links i18n %}
 {% block content %}
 
+    <script type="text/javascript">
+      var collection = {{ facility_list|geojsonfeature|safe }};
+      function map_init(map, options) {
+          L.geoJson(collection).addTo(map);
+      }
+    </script>
+
+
         <div ng-cloak class="area-filter row" ng-controller="ShiftWidgetCtrl">
             <h2>{% trans "You can help in the following facilities" %}</h2>
+            {% leaflet_map "facilities" callback="window.map_init" %}
+
             {% verbatim %}
                 <hr>
                 <div class="col-md12">

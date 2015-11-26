@@ -162,7 +162,8 @@ def get_facility_details(facility, shifts):
             'id': facility.organization.id,
             'name': facility.organization.name,
             'url': facility.organization.get_absolute_url(),
-        }
+        },
+        'geom': facility.geom if facility.show_on_map else None
     }
 
 

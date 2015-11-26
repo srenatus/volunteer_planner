@@ -2,6 +2,7 @@
 from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from djgeojson.fields import PointField
 
 from accounts.models import UserAccount
 from scheduler.models import Shift
@@ -169,6 +170,12 @@ class Facility(models.Model):
         default=Membership.JoinMode.INVITATION_ONLY,
         verbose_name=_(u'join mode'),
         help_text=_(u'Who can join this facility?'))
+
+    @property
+    def geom(self):
+        if self.latitude and self.longitude and self.show_on_map:
+            return {'type': 'Point',
+                    'coordinates': [self.longitude, self.latitude]}
 
     class Meta:
         verbose_name = _(u'facility')

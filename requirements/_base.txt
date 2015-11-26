@@ -24,3 +24,6 @@ sqlparse==0.1.16
 traitlets==4.0.0
 xlwt==1.0.0
 djangoajax==2.2.15
+django-geojson==2.8.1
+django-leaflet==0.17.0
+jsonfield

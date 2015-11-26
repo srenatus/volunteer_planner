@@ -5,6 +5,8 @@ from django.views.generic import TemplateView
 from content.views import translated_flatpage
 from registration.backends.default.views import RegistrationView
 from registration.forms import RegistrationFormUniqueEmail
+from organizations.models import Facility
+from djgeojson.views import GeoJSONLayerView
 
 urlpatterns = [
     url(r'^auth/register/$', RegistrationView.as_view(form_class=RegistrationFormUniqueEmail), name='registration_register'),
@@ -17,6 +19,7 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^ckeditor/', include('ckeditor.urls')),
     url(r'^i18n/', include('django.conf.urls.i18n')),
+    url(r'^data.geojson$', GeoJSONLayerView.as_view(model=Facility), name='data'),
     url(r'^', include('non_logged_in_area.urls')),
 ]
 

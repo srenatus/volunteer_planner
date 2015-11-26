@@ -78,6 +78,7 @@ class HelpDesk(LoginRequiredMixin, TemplateView):
         context['facility_json'] = json.dumps(facility_list,
                                               cls=DjangoJSONEncoder)
         context['shifts'] = open_shifts
+        context['facility_list'] = facility_list
         return context
 
 

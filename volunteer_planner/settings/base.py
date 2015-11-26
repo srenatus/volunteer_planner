@@ -48,7 +48,11 @@ THIRD_PARTY_APPS = (
 
     'accounts.apps.RegistrationConfig',
     'rest_framework',
-    'django_ajax'
+    'django_ajax',
+
+    # map display
+    'djgeojson',
+    'leaflet',
 )
 
 LOCAL_APPS = (
