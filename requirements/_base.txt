@@ -24,6 +24,6 @@ sqlparse==0.1.16
 traitlets==4.0.0
 xlwt==1.0.0
 djangoajax==2.2.15
-django-geojson==2.8.1
+-e git://github.com/makinacorpus/django-geojson.git@f34ab3a9cb77688ba0bfbb3c430ddb714b5dc1a4#egg=django-geojson
 django-leaflet==0.17.0
 jsonfield
