@@ -6,6 +6,7 @@ from djgeojson.fields import PointField
 
 from accounts.models import UserAccount
 from scheduler.models import Shift
+from organizations.utils import geocode
 
 
 class Membership(models.Model):
@@ -154,9 +155,11 @@ class Facility(models.Model):
                                       verbose_name=_(
                                           'Show on map of all facilities'))
     latitude = models.CharField(max_length=30, blank=True,
-                                verbose_name=_('latitude'))
+                                verbose_name=_('latitude'),
+                                help_text=_('This field will be filled automatically according to the saved address.'))
     longitude = models.CharField(max_length=30, blank=True,
-                                 verbose_name=_('longitude'))
+                                 verbose_name=_('longitude'),
+                                 help_text=_('This field will be filled automatically according to the saved address.'))
 
     slug = models.SlugField(max_length=80, verbose_name=_(u'slug'))
 
@@ -200,6 +203,12 @@ class Facility(models.Model):
     def get_absolute_url(self):
         return reverse('facility',
                        args=[self.organization.slug, self.slug])
+
+    def save(self, *args, **kwargs):
+        if not self.latitude or not self.longitude:
+            self.latitude, self.longitude = geocode(self.address_line)
+
+        super(Facility, self).save(*args, **kwargs)
 
 
 class OrganizationMembership(Membership):
