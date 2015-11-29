@@ -48,7 +48,9 @@
       }
 
       function map_init(map, options) {
-        L.geoJson(collection, {onEachFeature: facilityPopup}).addTo(map);
+        var geoJson = L.geoJson(collection, {onEachFeature: facilityPopup});
+        geoJson.addTo(map);
+        map.fitBounds(geoJson.getBounds());
       }
     </script>
 
