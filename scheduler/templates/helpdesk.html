@@ -41,9 +41,14 @@
 {% block content %}
 
     <script type="text/javascript">
-      var collection = {{ facility_list|geojsonfeature|safe }};
+      var collection = {{ facility_list | geojsonfeature:"url,name" | safe }};
+
+      function facilityPopup(feature, layer) {
+        layer.bindPopup("<a href='" + feature.properties.url + "'>" + feature.properties.name + "</a>");
+      }
+
       function map_init(map, options) {
-          L.geoJson(collection).addTo(map);
+        L.geoJson(collection, {onEachFeature: facilityPopup}).addTo(map);
       }
     </script>
 
